@@ -7,6 +7,15 @@
 
 import SwiftUI
 
+enum BleCommand {
+    case Scan                       // 스캔
+    case Connect(String)            // BLE 연결
+    case SendMotorAngles([Int])     // 전송명령
+    case Stop                       // 일시중지
+    case Home                       // 홈으로 이동
+}
+
+
 struct ContentView: View {
     
     @State private var bleManager: BLEManager = .init()
@@ -15,8 +24,48 @@ struct ContentView: View {
     
         
     var body: some View {
-        VStack(spacing: 20) {
-            Text(isConnected ? "ESP32 Connected OK" : "Connecting...")
+        NavigationStack {
+            
+            VStack(alignment: .leading) {
+                
+                if bleManager.esp32Peripheral == nil {
+                 ProgressView("ESP장치 찾는중 입니다....")
+                 .progressViewStyle(.circular)
+                 } else if isConnected {
+                 
+                List {
+                    Section("ESP32-Robot_Client") {
+                        remoteClient
+                    }
+                    
+                    Button("연결해제") {
+                        bleManager.disconnectFromPeripheral()
+                    }
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                
+                } else {
+                    List(bleManager.peripherals) { peripheral in
+                                device(peripheral)
+                    }
+                    .refreshable {
+                            bleManager.refreshDevices()
+                    }
+                }
+            }
+            .navigationBarTitle("ESP32 Robot Remote")
+            //remoteClient
+                
+        }
+    }
+    
+    private var remoteClient: some View {
+        return VStack(spacing: 20) {
+            Text(
+                bleManager.isConnected ? "ESP32 Connected OK" : "Connecting..."
+                //isConnected ? "ESP32 Connected OK" : "Connecting..."
+            )
                 .font(.headline)
                 .foregroundColor(isConnected ? .green : .red)
             
@@ -46,7 +95,7 @@ struct ContentView: View {
             .padding()
         }
         
-        Button("STOP") {
+         Button("STOP") {
             bleManager.motorAngles = Array(repeating: 90, count: 6)  // 홈 포지션
             bleManager.sendMotorAngles()
         }
@@ -57,8 +106,51 @@ struct ContentView: View {
         .clipShape(Circle())
         .padding()
     }
+    
+    private func device(_ peripheral: Peripheral) -> some View {
+           VStack(alignment: .leading) {
+               HStack {
+                   Text(peripheral.name)
+                   Spacer()
+                   Button(action: {
+                       bleManager.connectPeripheral(peripheral: peripheral)
+                   }) {
+                       Text("Connect")
+                   }
+                   .buttonStyle(.borderedProminent)
+               }
+               
+               Divider()
+               
+               VStack(alignment: .leading) {
+                   Group {
+                       Text("""
+                                 Device UUID:
+                                 \(peripheral.id.uuidString)
+                                 """)
+                       .padding([.bottom], 10)
+                                          
+                                          if let adsServiceUUIDs = peripheral.advertisementServiceUUIDs {
+                                              Text("Advertisement Service UUIDs:")
+                                              ForEach(adsServiceUUIDs, id: \.self) { uuid in
+                                                  Text(uuid)
+                                              }
+                                          }
+                                          
+                                          HStack {
+                                              Image(systemName: "chart.bar.fill")
+                                              Text("\(peripheral.rssi) dBm")
+                                          }
+                                          .padding([.top], 10)
+                                      }
+                                      .font(.footnote)
+                                  }
+                    }
+            }
 }
 
 #Preview {
     ContentView()
 }
+
+

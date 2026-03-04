@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 enum BleCommand {
     case Scan                       // 스캔
@@ -18,9 +19,13 @@ enum BleCommand {
 
 struct ContentView: View {
     
-    @State private var bleManager: BLEManager = .init()
+    //@State private var bleManager: BLEManager = .init()
+    @ObservedObject var bleManager = BLEManager()
     @State private var isConnected: Bool = true
     @State private var selectedMotor: Int = 0
+    
+    @State private var timer: Timer.TimerPublisher = Timer.publish(every: 1, on: .main, in: .common)
+    @State private var cancellable: AnyCancellable?
     
         
     var body: some View {
@@ -28,10 +33,10 @@ struct ContentView: View {
             
             VStack(alignment: .leading) {
                 
-                if bleManager.esp32Peripheral == nil {
+                if bleManager.peripherals.isEmpty {
                  ProgressView("ESP장치 찾는중 입니다....")
                  .progressViewStyle(.circular)
-                 } else if isConnected {
+                } else if bleManager.isConnected {
                  
                 List {
                     Section("ESP32-Robot_Client") {

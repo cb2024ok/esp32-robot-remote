@@ -36,8 +36,10 @@
         // 모터의 특성을 정의
         var motorCharacteristic: CBCharacteristic?
         // 모터의 각도를 정의
-        var motorAngles: [Int] = [45] //Array(repeating: 90, count: 6)  // #0~#5 각도
-
+        @Published var motorXAngles: [Int] = Array(repeating: 90, count: 6)  // #0~#5 각도
+        @Published var motorYAngles: [Int] = Array(repeating: 90, count: 6)  // Y축 변화
+        @Published var selectedMotor: Int = 0  // 모터번호
+        
         @Published var peripherals: [Peripheral] = []
         @Published var isConnected = false // Indicates if the app is connected to a peripheral.
         @Published var bootButonState = false // true - pressed, false - released
@@ -170,18 +172,38 @@
         }
         
             // 각도 전송 함수 (앱에서 호출)
-                 func sendMotorAngles() {
-                     guard let char = motorCharacteristic, let peripheral = esp32Peripheral else {
+        func sendMotorAngles(for id:Int) {
+            guard let char = esp32Characteristic, let peripheral = esp32Peripheral else {
+                        print("DEBUG: 특성(Characteristic) 또는 장치를 찾을 수 없습니다.") // 로그를 남겨야 범인을 잡습니다!
                          return
                      }
                      
+                    /*
                      var data = Data()
-                     for (index, angle) in motorAngles.enumerated() {
+                     for (index, angle) in motorXAngles.enumerated() {
                          data.append(UInt8(index))       // 모터 번호
                          data.append(UInt8(angle))       // 각도 (0~180)
                      }
-                     
-                     peripheral.writeValue(data, for: char, type: .withResponse)
-                     print("Sent angles: \(motorAngles)")
+                     */
+                     let motorId = UInt8(id)
+                     let xValue = UInt8(motorXAngles[id])
+                     let yValue = UInt8(motorYAngles[id])
+                         
+                         // 5바이트 패킷 구성
+                         let packet: [UInt8] = [
+                             0xAA,           // Header
+                             motorId,        // ID
+                             xValue,         // X Angle
+                             yValue,         // Y Angle
+                             0xFF            // Checksum (나중에 연산값으로 교체)
+                         ]
+                     print("데이터 전송- DEBUG:\(packet)")
+                         
+                         // BLE로 packet 배열 전송
+                     peripheral.writeValue(Data(packet), for: char, type: .withResponse)
+                    print("TA 설계: X:\(xValue), Y:\(yValue) 동시 전송 완료, baby!")
+                      
+            
                  }
     }
+

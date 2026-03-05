@@ -22,7 +22,7 @@ struct ContentView: View {
     //@State private var bleManager: BLEManager = .init()
     @ObservedObject var bleManager = BLEManager()
     @State private var isConnected: Bool = true
-    @State private var selectedMotor: Int = 0
+    //@State private var selectedMotor: Int = 0
     
     @State private var timer: Timer.TimerPublisher = Timer.publish(every: 1, on: .main, in: .common)
     @State private var cancellable: AnyCancellable?
@@ -71,45 +71,101 @@ struct ContentView: View {
                 bleManager.isConnected ? "ESP32 Connected OK" : "Connecting..."
                 //isConnected ? "ESP32 Connected OK" : "Connecting..."
             )
-                .font(.headline)
-                .foregroundColor(isConnected ? .green : .red)
+            .font(.headline)
+            .foregroundColor(isConnected ? .green : .red)
             
             HStack {
                 ForEach(0..<6) { index in
                     Button("#\(index)") {
-                        selectedMotor = index
+                        bleManager.selectedMotor = index // BLE 모터변경...
+                        print("Motor 번호: \(index)")
                     }
                     .padding(8)
-                    .background(selectedMotor == index ? Color.blue : Color.gray.opacity(0.3))
+                    .background(
+                        bleManager.selectedMotor == index ? Color.blue : Color.gray
+                            .opacity(0.3)
+                    )
+                    .onTapGesture {
+                        bleManager.selectedMotor = index // BLE 모터변경...
+                        print("변경된 Motor 번호: \(index)")
+                    }
                     .foregroundColor(.white)
                     .clipShape(Capsule())
                 }
             }
-        }
-        
-        // 간단 조이스틱 대신 슬라이더 예시 (나중에 Gesture로 업그레이드)
-        VStack {
-            Text("Motor #\(selectedMotor): \(bleManager.motorAngles[selectedMotor])°")
-            Slider(value: Binding(
-                get: { Double(bleManager.motorAngles[selectedMotor]) },
-                set: { newValue in
-                    bleManager.motorAngles[selectedMotor] = Int(newValue)
-                    bleManager.sendMotorAngles()  // 실시간 전송
+            
+            
+            
+            // 간단 조이스틱 대신 슬라이더 예시 (나중에 Gesture로 업그레이드)
+                VStack {
+                    Text(
+                        "Motor #\(bleManager.selectedMotor): \(bleManager.motorXAngles[bleManager.selectedMotor])°"
+                    )
+                    Slider(
+value: Binding(
+    get: {
+        Double(bleManager.motorXAngles[bleManager.selectedMotor])
+    },
+                        set: { newValue in
+                            bleManager
+                                .motorXAngles[bleManager.selectedMotor] = Int(
+                                    newValue
+                                )
+                        }
+                    ),
+ in: 0...180,
+ step: 1,
+ onEditingChanged: { isEditing in
+                        if !isEditing {
+                            bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
+                            print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
+                        }
+                    })
+                    .padding()
                 }
-            ), in: 0...180, step: 1)
+                .padding(10)
+                
+                VStack(alignment: .leading) {
+                    Text(
+                        "Motor #\(bleManager.selectedMotor): \(bleManager.motorYAngles[bleManager.selectedMotor])°"
+                    )
+                    Slider(
+value: Binding(
+    get: {
+        Double(bleManager.motorYAngles[bleManager.selectedMotor])
+    },
+                        set: { newValue in
+                            bleManager
+                                .motorYAngles[bleManager.selectedMotor] = Int(
+                                    newValue
+                                )
+                            bleManager.selectedMotor = Int(newValue) // 선택한 모터번호
+                        }
+                    ),
+ in: 0...180,
+ step: 1,
+ onEditingChanged: { isEditing in
+                        if !isEditing {
+                            bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
+                            print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
+                        }
+                    })
+                    .rotationEffect(.degrees(-90))
+                    .padding()
+                }
+                .padding(50)
+                
+                Button("HOME") {
+                    bleManager.motorXAngles = Array(repeating: 90, count: 6)  // 홈 포지션
+                    bleManager.sendMotorAngles(for: bleManager.selectedMotor)
+                }
+            .font(.title)
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .clipShape(Circle())
             .padding()
         }
-        
-         Button("STOP") {
-            bleManager.motorAngles = Array(repeating: 90, count: 6)  // 홈 포지션
-            bleManager.sendMotorAngles()
-        }
-        .font(.title)
-        .padding()
-        .background(Color.red)
-        .foregroundColor(.white)
-        .clipShape(Circle())
-        .padding()
     }
     
     private func device(_ peripheral: Peripheral) -> some View {

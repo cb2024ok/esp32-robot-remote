@@ -27,6 +27,10 @@ struct ContentView: View {
     @State private var timer: Timer.TimerPublisher = Timer.publish(every: 1, on: .main, in: .common)
     @State private var cancellable: AnyCancellable?
     
+    // 모터 슬라이드 상태관리
+    @State private var motorXactive: Bool = true
+    @State private var motorYactive: Bool = true
+    
         
     var body: some View {
         NavigationStack {
@@ -78,8 +82,8 @@ struct ContentView: View {
                 ForEach(0..<6) { index in
                     Button("#\(index)") {
                         bleManager.selectedMotor = index // BLE 모터변경...
-                        print("Motor 번호: \(index)")
                     }
+                    .id(index)  //  버튼 ID에 따른 슬라이드 컨트롤을 위한 체크..
                     .padding(8)
                     .background(
                         bleManager.selectedMotor == index ? Color.blue : Color.gray
@@ -88,6 +92,32 @@ struct ContentView: View {
                     .onTapGesture {
                         bleManager.selectedMotor = index // BLE 모터변경...
                         print("변경된 Motor 번호: \(index)")
+                   
+                        switch index {
+                        case 0:
+                            motorXactive = true
+                            motorYactive = false
+                        case 1:
+                            motorYactive = true
+                            motorXactive = false
+                        case 2:
+                            motorYactive = true
+                            motorXactive = false
+                        case 3:
+                            motorYactive = true
+                            motorXactive = false
+                        case 4:
+                            motorXactive = true
+                            motorYactive = false
+                        case 5:
+                            motorXactive = true
+                            motorYactive = false
+                        default:
+                            motorXactive = true
+                            motorYactive = true
+                        }
+                        
+                   
                     }
                     .foregroundColor(.white)
                     .clipShape(Capsule())
@@ -95,34 +125,32 @@ struct ContentView: View {
             }
             
             
-            
             // 간단 조이스틱 대신 슬라이더 예시 (나중에 Gesture로 업그레이드)
                 VStack {
                     Text(
                         "Motor #\(bleManager.selectedMotor): \(bleManager.motorXAngles[bleManager.selectedMotor])°"
                     )
-                    Slider(
-value: Binding(
-    get: {
-        Double(bleManager.motorXAngles[bleManager.selectedMotor])
-    },
+                    Slider(value: Binding(get: {
+                        Double(bleManager.motorXAngles[bleManager.selectedMotor])
+                        },
                         set: { newValue in
                             bleManager
                                 .motorXAngles[bleManager.selectedMotor] = Int(
                                     newValue
                                 )
                         }
-                    ),
- in: 0...180,
- step: 1,
- onEditingChanged: { isEditing in
-                        if !isEditing {
-                            bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
-                            print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
-                        }
+                    ),in:
+                            0...180,
+                           step: 1,
+                           onEditingChanged: { isEditing in
+                            if !isEditing {
+                                bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
+                                print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
+                            }
                     })
                     .padding()
                 }
+                .opacity(motorXactive ? 1.0 : 0.0)
                 .padding(10)
                 
                 VStack(alignment: .leading) {
@@ -130,11 +158,11 @@ value: Binding(
                         "Motor #\(bleManager.selectedMotor): \(bleManager.motorYAngles[bleManager.selectedMotor])°"
                     )
                     Slider(
-value: Binding(
-    get: {
-        Double(bleManager.motorYAngles[bleManager.selectedMotor])
-    },
-                        set: { newValue in
+                        value: Binding(
+                            get: {
+                                Double(bleManager.motorYAngles[bleManager.selectedMotor])
+                            },
+                            set: { newValue in
                             bleManager
                                 .motorYAngles[bleManager.selectedMotor] = Int(
                                     newValue
@@ -142,9 +170,9 @@ value: Binding(
                             bleManager.selectedMotor = Int(newValue) // 선택한 모터번호
                         }
                     ),
- in: 0...180,
- step: 1,
- onEditingChanged: { isEditing in
+                        in: 0...180,
+                        step: 1,
+                        onEditingChanged: { isEditing in
                         if !isEditing {
                             bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
                             print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
@@ -153,6 +181,7 @@ value: Binding(
                     .rotationEffect(.degrees(-90))
                     .padding()
                 }
+                .opacity(motorYactive ? 1.0 : 0.0)
                 .padding(50)
                 
                 Button("HOME") {
@@ -213,5 +242,4 @@ value: Binding(
 #Preview {
     ContentView()
 }
-
 

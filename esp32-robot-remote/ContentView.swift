@@ -16,6 +16,20 @@ enum BleCommand {
     case Home                       // 홈으로 이동
 }
 
+enum MotorAxis {
+    case yaw
+    case pitch
+}
+
+func getAxis(for index: Int) -> MotorAxis {
+    switch index {
+    case 1,2,3:
+        return .pitch
+    default:
+        return .yaw
+    }
+}
+
 
 struct ContentView: View {
     
@@ -93,31 +107,6 @@ struct ContentView: View {
                         bleManager.selectedMotor = index // BLE 모터변경...
                         print("변경된 Motor 번호: \(index)")
                    
-                        switch index {
-                        case 0:
-                            motorXactive = true
-                            motorYactive = false
-                        case 1:
-                            motorYactive = true
-                            motorXactive = false
-                        case 2:
-                            motorYactive = true
-                            motorXactive = false
-                        case 3:
-                            motorYactive = true
-                            motorXactive = false
-                        case 4:
-                            motorXactive = true
-                            motorYactive = false
-                        case 5:
-                            motorXactive = true
-                            motorYactive = false
-                        default:
-                            motorXactive = true
-                            motorYactive = true
-                        }
-                        
-                   
                     }
                     .foregroundColor(.white)
                     .clipShape(Capsule())
@@ -130,58 +119,57 @@ struct ContentView: View {
                     Text(
                         "Motor #\(bleManager.selectedMotor): \(bleManager.motorXAngles[bleManager.selectedMotor])°"
                     )
-                    Slider(value: Binding(get: {
-                        Double(bleManager.motorXAngles[bleManager.selectedMotor])
+                    
+                    // 모터코드에 따른 슬라이드 변경 (case 0,4,5)
+                    if bleManager.selectedMotor == 0 || bleManager.selectedMotor >= 4 {
+                        
+                        Slider(value: Binding(get: {
+                            Double(bleManager.motorXAngles[bleManager.selectedMotor])
                         },
-                        set: { newValue in
+                                              set: { newValue in
                             bleManager
                                 .motorXAngles[bleManager.selectedMotor] = Int(
                                     newValue
                                 )
                         }
-                    ),in:
-                            0...180,
-                           step: 1,
-                           onEditingChanged: { isEditing in
+                                             ),in:
+                                0...180,
+                               step: 1,
+                               onEditingChanged: { isEditing in
                             if !isEditing {
                                 bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
                                 print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
                             }
-                    })
-                    .padding()
+                        })
+                        .padding()
+                    }
+                    else // 모터 (1,2,3)
+                    {
+                        Slider(
+                            value: Binding(
+                                get: {
+                                    Double(bleManager.motorYAngles[bleManager.selectedMotor])
+                                },
+                                set: { newValue in
+                                bleManager
+                                    .motorYAngles[bleManager.selectedMotor] = Int(
+                                        newValue
+                                    )
+                            }
+                        ),
+                            in: 0...180,
+                            step: 1,
+                            onEditingChanged: { isEditing in
+                            if !isEditing {
+                                bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
+                                print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
+                            }
+                        })
+                        .rotationEffect(.degrees(-90))
+                        .padding()
+                    }
+                        
                 }
-                .opacity(motorXactive ? 1.0 : 0.0)
-                .padding(10)
-                
-                VStack(alignment: .leading) {
-                    Text(
-                        "Motor #\(bleManager.selectedMotor): \(bleManager.motorYAngles[bleManager.selectedMotor])°"
-                    )
-                    Slider(
-                        value: Binding(
-                            get: {
-                                Double(bleManager.motorYAngles[bleManager.selectedMotor])
-                            },
-                            set: { newValue in
-                            bleManager
-                                .motorYAngles[bleManager.selectedMotor] = Int(
-                                    newValue
-                                )
-                            bleManager.selectedMotor = Int(newValue) // 선택한 모터번호
-                        }
-                    ),
-                        in: 0...180,
-                        step: 1,
-                        onEditingChanged: { isEditing in
-                        if !isEditing {
-                            bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
-                            print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
-                        }
-                    })
-                    .rotationEffect(.degrees(-90))
-                    .padding()
-                }
-                .opacity(motorYactive ? 1.0 : 0.0)
                 .padding(50)
                 
                 Button("HOME") {

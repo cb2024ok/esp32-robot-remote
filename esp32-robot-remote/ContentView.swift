@@ -117,7 +117,7 @@ struct ContentView: View {
             // 간단 조이스틱 대신 슬라이더 예시 (나중에 Gesture로 업그레이드)
                 VStack {
                     Text(
-                        "Motor #\(bleManager.selectedMotor): \(bleManager.motorXAngles[bleManager.selectedMotor])°"
+                        "Motor #\(bleManager.selectedMotor): \(getAxis(for: bleManager.selectedMotor) == .yaw ? bleManager.motorXAngles[bleManager.selectedMotor] : bleManager.motorYAngles[bleManager.selectedMotor])°"
                     )
                     
                     // 모터코드에 따른 슬라이드 변경 (case 0,4,5)
@@ -157,7 +157,7 @@ struct ContentView: View {
                                     )
                             }
                         ),
-                            in: 0...180,
+                            in: 0...400,
                             step: 1,
                             onEditingChanged: { isEditing in
                             if !isEditing {

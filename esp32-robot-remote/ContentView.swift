@@ -157,7 +157,7 @@ struct ContentView: View {
                                     )
                             }
                         ),
-                            in: 0...400,
+                            in: 0...180,
                             step: 1,
                             onEditingChanged: { isEditing in
                             if !isEditing {

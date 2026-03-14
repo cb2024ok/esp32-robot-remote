@@ -123,6 +123,7 @@ struct ContentView: View {
                     // 모터코드에 따른 슬라이드 변경 (case 0,4,5)
                     if bleManager.selectedMotor == 0 || bleManager.selectedMotor >= 4 {
                         
+                        /*
                         Slider(value: Binding(get: {
                             Double(bleManager.motorXAngles[bleManager.selectedMotor])
                         },
@@ -141,10 +142,35 @@ struct ContentView: View {
                                 print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
                             }
                         })
+                         */
+                        UISliderView(
+                                        value: Binding(get: {
+                                            Double(bleManager.motorXAngles[bleManager.selectedMotor])
+                                        },
+                                            set: { newValue in
+                                            bleManager
+                                                .motorXAngles[bleManager.selectedMotor] = Int(
+                                                    newValue
+                                                )
+                                        }),
+                                        minValue: 0.0,
+                                        maxValue: 180.0,
+                                        thumbColor: .red,
+                                        minTrackColor: .cyan,
+                                        maxTrackColor: .purple,
+                                        onEditingChanged: { editing in
+                                            //isEditing = editing
+                                            //print("Editing status: \(editing)")
+                                            if !editing {
+                                                bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
+                                                print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
+                                            }
+                                        })
                         .padding()
                     }
                     else // 모터 (1,2,3)
                     {
+                        /*
                         Slider(
                             value: Binding(
                                 get: {
@@ -165,6 +191,28 @@ struct ContentView: View {
                                 print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
                             }
                         })
+                        */
+                        UISliderView(
+                                        value: Binding(get: {
+                                            Double(bleManager.motorYAngles[bleManager.selectedMotor])
+                                        },
+                                            set: { newValue in
+                                            bleManager
+                                                .motorYAngles[bleManager.selectedMotor] = Int(
+                                                    newValue
+                                                )
+                                        }),
+                                        minValue: 0.0,
+                                        maxValue: 180.0,
+                                        thumbColor: .red,
+                                        minTrackColor: .cyan,
+                                        maxTrackColor: .purple,
+                                        onEditingChanged: { editing in
+                                            if !editing {
+                                                bleManager.sendMotorAngles(for: bleManager.selectedMotor) // 실시간 전송
+                                                print("최종 목적지 도착: 패킷 전송 완료 SU-57!")
+                                            }
+                                        })
                         .rotationEffect(.degrees(-90))
                         .padding()
                     }
